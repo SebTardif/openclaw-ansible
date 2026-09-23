@@ -115,7 +115,10 @@ expect_reject "ubuntu-2204-ansible-2.10" "ansible-playbook 2.10.8"
 expect_reject "ubuntu-2204-core-2.12" "ansible-playbook [core 2.12.0]"
 expect_reject "debian-11-ansible-2.10" "ansible-playbook 2.10.17"
 expect_reject "unparseable-banner" "ansible-playbook (devel build)"
+expect_reject "core-2.14.0rc1" "ansible-playbook [core 2.14.0rc1]"
+expect_reject "core-2.14.0.dev0" "ansible-playbook [core 2.14.0.dev0]"
 expect_accept "exact-core-2.14.0" "ansible-playbook [core 2.14.0]"
+expect_accept "core-2.14.0.post1" "ansible-playbook [core 2.14.0.post1]"
 expect_accept "ubuntu-2404-core-2.16" "ansible-playbook [core 2.16.3]"
 
 if [ "$failures" -ne 0 ]; then

@@ -26,15 +26,25 @@ MIN_ANSIBLE_CORE="2.14.0"
 
 ansible_core_version_from_banner() {
     local banner="$1"
-    if [[ "$banner" =~ \[core[[:space:]]+([0-9]+)\.([0-9]+)(\.([0-9]+))? ]]; then
-        printf '%s.%s.%s' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[4]:-0}"
-        return 0
+    local major="" minor="" patch="" suffix=""
+    if [[ "$banner" =~ \[core[[:space:]]+([0-9]+)\.([0-9]+)(\.([0-9]+))?([^][:space:]]*) ]]; then
+        major="${BASH_REMATCH[1]}"
+        minor="${BASH_REMATCH[2]}"
+        patch="${BASH_REMATCH[4]:-0}"
+        suffix="${BASH_REMATCH[5]}"
+    elif [[ "$banner" =~ ansible-playbook[[:space:]]+([0-9]+)\.([0-9]+)(\.([0-9]+))?([^[:space:]]*) ]]; then
+        major="${BASH_REMATCH[1]}"
+        minor="${BASH_REMATCH[2]}"
+        patch="${BASH_REMATCH[4]:-0}"
+        suffix="${BASH_REMATCH[5]}"
+    else
+        return 1
     fi
-    if [[ "$banner" =~ ansible-playbook[[:space:]]+([0-9]+)\.([0-9]+)(\.([0-9]+))? ]]; then
-        printf '%s.%s.%s' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[4]:-0}"
-        return 0
+    # requires_ansible >=2.14.0 rejects rc/dev/alpha/beta. A post-release is still final.
+    if [[ -n "$suffix" && ! "$suffix" =~ ^\.?post[0-9]*$ ]]; then
+        return 2
     fi
-    return 1
+    printf '%s.%s.%s' "$major" "$minor" "$patch"
 }
 
 version_ge() {

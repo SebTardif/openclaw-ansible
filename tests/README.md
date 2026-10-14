@@ -18,9 +18,25 @@ bash tests/run-tests.sh ubuntu2404
 
 The test harness runs three sequential tests:
 
-1. **Convergence**: Runs the playbook with `ci_test=true` to verify it completes without errors
+Before provisioning, `run-playbook-output.sh` checks the public wrapper's onboarding
+instructions and verifies that a failed playbook preserves its exit status without
+printing a success message. Its Ansible and sudo commands are stubbed.
+
+1. **Convergence**: Runs `run-playbook.sh` as root with `ci_test=true` to verify the public entrypoint completes without errors
 2. **Verification**: Runs `verify.yml` to assert the system is in the expected state
 3. **Idempotency**: Runs the playbook a second time and verifies `changed=0`
+
+Between verification and idempotency, `installer-user.sh` exercises root invocation
+through the local-source, installed-collection, and bootstrap entrypoints. Collection
+acquisition is stubbed and playbook selection is redirected to `installer-user.yml`,
+which uses real Ansible and sudo to assert that system tasks run as root and
+service tasks run as an unprivileged account. It also checks extra-variable argument
+forwarding. Run this test only as root in a disposable Linux container or VM.
+
+`development-upgrade.sh` then runs the production development tasks with real Git
+and pnpm against a small local project. It starts with a root-owned checkout and
+build output, verifies the build runs as `openclaw`, and checks that a private
+local file and an external symlink target retain their contents and permissions.
 
 ## Files
 
@@ -28,8 +44,19 @@ The test harness runs three sequential tests:
 - `entrypoint.sh` - Test execution script (convergence → verification → idempotency)
 - `verify.yml` - Post-convergence assertions (user exists, packages installed, directories created, etc.)
 - `run-tests.sh` - Local test runner script
+- `install-ansible-version.sh` - Drive `install.sh` with a mocked `ansible-playbook` and require ansible-core 2.14+
 
 ## CI Test Mode
+
+The separate Firewall Default Route job runs `sudo env "PATH=$PATH" bash
+tests/default-route-interface.sh` on a disposable Linux runner with Ansible,
+iproute2, iptables, and curl. It uses an isolated network namespace to execute the production route
+parser, interface validation, sysfs lookup, and UFW rule renderer against gateway,
+gateway-less, underscore-prefixed, and multipath routes. Every case reapplies with
+zero changes; a missing route must fail before writing isolation rules. A real
+HTTP server in a separate namespace verifies that the generated DOCKER-USER rules
+block new forwarded connections from an external client while host-local requests
+still succeed. It leaves the host's routes and UFW files untouched.
 
 The `ci_test` variable skips tasks that require:
 - Docker-in-Docker (Docker CE installation)
@@ -71,8 +98,10 @@ The pinned lint tools in `requirements-lint.txt` require Python 3.12 or newer; C
 python -m pip install -r requirements-lint.txt
 ansible-galaxy collection install -r requirements.yml
 yamllint .
-ansible-lint playbook.yml tests/docker-group-security.yml tests/sudoers-scope.yml
+ansible-lint playbook.yml playbooks/*.yml tests/docker-group-security.yml tests/sudoers-scope.yml
 ansible-playbook playbook.yml --syntax-check
+ansible-playbook playbooks/install.yml --syntax-check
+ansible-playbook playbooks/deploy.yml --syntax-check
 ansible-playbook tests/docker-group-security.yml --syntax-check
 ansible-playbook tests/sudoers-scope.yml --syntax-check
 ansible-playbook tests/sudoers-scope.yml

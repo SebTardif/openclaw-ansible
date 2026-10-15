@@ -98,8 +98,14 @@ The openclaw user has limited sudo permissions (not full root):
 - systemctl start/stop/restart/status openclaw
 - systemctl daemon-reload
 - tailscale commands
-- journalctl for openclaw logs
+- journalctl -u openclaw with -f, -n 50, and --no-pager
 ```
+
+Journal access is limited to those exact invocations, including the combinations
+`-f --no-pager` and `-n 50 --no-pager`. Additional units, alternate journal
+directories/files, and other arguments require an administrator. Reapplying the
+installer replaces the old wildcard journal rule on existing hosts; use a
+separate administrator-owned sudoers file for any deliberate wider access.
 
 The user is deliberately excluded from the `docker` group. Membership would
 grant root-equivalent control through the rootful Docker daemon and bypass the

@@ -1,0 +1,69 @@
+---
+- name: Verify scoped journal sudo authorization
+  hosts: localhost
+  connection: local
+  become: true
+  gather_facts: true
+
+  vars:
+    openclaw_user: openclaw-sudoers-test
+    openclaw_home: /home/openclaw-sudoers-test
+    ci_test: true
+    allowed_journal_args:
+      - []
+      - [-f]
+      - [-n, '50']
+      - [--no-pager]
+      - [-n, '50', --no-pager]
+      - [-f, --no-pager]
+    denied_journal_args:
+      - [-u, sshd]
+      - [--unit=sshd]
+      - [--directory=/tmp]
+      - [--file=/tmp/other.journal]
+      - [--root=/tmp]
+      - [--namespace=other]
+      - [--rotate]
+
+  tasks:
+    - name: Refuse to overwrite an existing test account
+      ansible.builtin.command: getent passwd openclaw-sudoers-test
+      register: sudoers_existing_user
+      changed_when: false
+      failed_when: sudoers_existing_user.rc != 2
+
+    - name: Exercise the production service account policy
+      block:
+        - name: Install the real service user and sudoers policy
+          ansible.builtin.include_role:
+            name: openclaw
+            tasks_from: user
+
+        - name: Authorize supported journal queries as the service user
+          ansible.builtin.command:
+            argv: >-
+              {{ ['sudo', '-u', openclaw_user, '--', 'sudo', '-n', '-l', '--',
+                  '/usr/bin/journalctl', '-u', 'openclaw'] + item }}
+          loop: "{{ allowed_journal_args }}"
+          changed_when: false
+
+        - name: Deny access outside the scoped journal commands
+          ansible.builtin.command:
+            argv: >-
+              {{ ['sudo', '-u', openclaw_user, '--', 'sudo', '-n', '-l', '--',
+                  '/usr/bin/journalctl', '-u', 'openclaw'] + item }}
+          loop: "{{ denied_journal_args }}"
+          register: sudoers_denied_query
+          changed_when: false
+          failed_when: sudoers_denied_query.rc != 1
+      always:
+        - name: Remove the test sudoers policy
+          ansible.builtin.file:
+            path: /etc/sudoers.d/openclaw-sudoers-test
+            state: absent
+
+        - name: Remove the test account and home
+          ansible.builtin.user:
+            name: openclaw-sudoers-test
+            state: absent
+            remove: true

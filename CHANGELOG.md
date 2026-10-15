@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Restrict passwordless journal access to exact OpenClaw log commands, including on existing installations; wider queries require administrator-managed permissions. Thanks @SebTardif.
 - Update ansible-core to 2.21.5 for developer checks and CI.
 - Detect the device after the default route's `dev` token so gateway-less and multipath routes configure Docker isolation correctly, including underscore-prefixed interfaces. Thanks @SebTardif.
 - Check the collection's existing Ansible 2.14 minimum before downloading it, with controller recovery guidance for older distributions. Thanks @SebTardif.

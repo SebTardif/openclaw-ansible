@@ -56,7 +56,7 @@
       # If openclaw is compromised, attackers can only:
       # - Manage the openclaw service
       # - Run basic tailscale diagnostics
-      # - View openclaw logs
+      # - View openclaw unit logs
       #
       # To grant full tailscale control (e.g., for self-healing VPN):
       #   {{ openclaw_user }} ALL=(ALL) NOPASSWD: /usr/bin/tailscale *
@@ -85,8 +85,13 @@
       {{ openclaw_user }} ALL=(ALL) NOPASSWD: /usr/bin/tailscale ping *
       {{ openclaw_user }} ALL=(ALL) NOPASSWD: /usr/bin/tailscale whois *
 
-      # Journal access - openclaw logs only
-      {{ openclaw_user }} ALL=(ALL) NOPASSWD: /usr/bin/journalctl -u openclaw *
+      # Journal access - openclaw unit only (no extra -u/--directory/--file)
+      {{ openclaw_user }} ALL=(ALL) NOPASSWD: /usr/bin/journalctl -u openclaw
+      {{ openclaw_user }} ALL=(ALL) NOPASSWD: /usr/bin/journalctl -u openclaw -f
+      {{ openclaw_user }} ALL=(ALL) NOPASSWD: /usr/bin/journalctl -u openclaw -n 50
+      {{ openclaw_user }} ALL=(ALL) NOPASSWD: /usr/bin/journalctl -u openclaw --no-pager
+      {{ openclaw_user }} ALL=(ALL) NOPASSWD: /usr/bin/journalctl -u openclaw -n 50 --no-pager
+      {{ openclaw_user }} ALL=(ALL) NOPASSWD: /usr/bin/journalctl -u openclaw -f --no-pager
     validate: /usr/sbin/visudo -cf %s
 
 - name: Set openclaw user as primary user for installation

@@ -71,6 +71,7 @@ Everything else runs normally: package installation, user creation, Node.js/pnpm
 |-----------|---------|-------|
 | System packages (35+) | ✅ Yes | Full apt install |
 | User creation + config | ✅ Yes | User, .bashrc, sudoers, SSH dir |
+| Journal sudo scope | ✅ Yes | `tests/sudoers-scope.yml` verifies real Linux sudo authorization for allowed log commands and denies additional units/files |
 | Node.js + pnpm | ✅ Yes | Full install + version check |
 | Directory structure | ✅ Yes | All .openclaw/* dirs with perms |
 | Git global config | ✅ Yes | Aliases, default branch |
@@ -97,11 +98,14 @@ The pinned lint tools in `requirements-lint.txt` require Python 3.12 or newer; C
 python -m pip install -r requirements-lint.txt
 ansible-galaxy collection install -r requirements.yml
 yamllint .
-ansible-lint playbook.yml playbooks/*.yml tests/docker-group-security.yml
+ansible-lint playbook.yml playbooks/*.yml tests/docker-group-security.yml tests/sudoers-scope.yml
 ansible-playbook playbook.yml --syntax-check
 ansible-playbook playbooks/install.yml --syntax-check
 ansible-playbook playbooks/deploy.yml --syntax-check
 ansible-playbook tests/docker-group-security.yml --syntax-check
+ansible-playbook tests/sudoers-scope.yml --syntax-check
+# On a disposable Linux host; creates and removes a test service account:
+ansible-playbook tests/sudoers-scope.yml
 ```
 
 ### Additional Distributions

@@ -149,5 +149,8 @@ jobs:
       - name: Install Ansible
         run: python -m pip install -r requirements-lint.txt
 
+      - name: Install Ansible collections
+        run: ansible-galaxy collection install -r requirements.yml
+
       - name: Verify journal permissions using Linux sudo authorization
         run: ansible-playbook tests/sudoers-scope.yml
